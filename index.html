@@ -88,7 +88,7 @@
                         <!-- <p class="timeline-location">Храм Святой Екатерины</p> -->
                         <!-- <p class="timeline-address">ул. Садовая, 12, Санкт-Петербург</p> -->
                         <div class="timeline-description">
-                            <p>Торжественное бракосочетание.</p>
+                            <p>Торжественное бракосочетание</p>
                         </div>
                         <!-- <div class="timeline-note">
                             <i class="fas fa-info-circle"></i>
@@ -98,7 +98,7 @@
                 </div>
 
                 <!-- Фотосессия -->
-                <!-- <div class="timeline-item">
+                <div class="timeline-item">
                     <div class="timeline-icon">
                         <div class="icon-circle">
                             <i class="fas fa-camera-retro"></i>
@@ -108,15 +108,15 @@
                     <div class="timeline-content">
                         <div class="timeline-header">
                             <h3>Фотосессия</h3>
-                            <span class="timeline-time">16:30</span>
+                            <span class="timeline-time">12:30</span>
                         </div>
-                        <p class="timeline-location">Летний сад</p>
-                        <p class="timeline-address">Набережная реки Фонтанки</p>
+                        <p class="timeline-location">Астраханский кремль</p>
+                        <!-- <p class="timeline-address">Набережная реки Фонтанки</p> -->
                         <div class="timeline-description">
-                            <p>Прогулка и памятные фотографии. Присоединяйтесь к нам!</p>
+                            <p>Прогулка и памятные фотографии</p>
                         </div>
                     </div>
-                </div> -->
+                </div>
 
                 <!-- Банкет -->
                 <div class="timeline-item">
@@ -144,10 +144,10 @@
                 </div>
 
                 <!-- Танцы -->
-                <!-- <div class="timeline-item">
+                <div class="timeline-item">
                     <div class="timeline-icon">
                         <div class="icon-circle">
-                            <i class="fas fa-music"></i>
+                            <i class="fas fa-moon"></i>
                         </div>
                         <div class="timeline-line last-icon">
                             <div class="firework"></div>
@@ -155,18 +155,18 @@
                     </div>
                     <div class="timeline-content">
                         <div class="timeline-header">
-                            <h3>Танцы и праздник</h3>
-                            <span class="timeline-time">20:00</span>
+                            <h3>Окончание вечера</h3>
+                            <span class="timeline-time">00:00</span>
                         </div>
                         <div class="timeline-description">
-                            <p>Вечер продолжится танцами, развлечениями и сюрпризами.</p>
+                            <p>К сожалению, даже такие радостные дни подходят к концу</p>
                         </div>
-                        <div class="timeline-note accent">
+                        <!-- <div class="timeline-note accent">
                             <i class="fas fa-gift"></i>
                             <span>Подарки лучше в конвертах</span>
-                        </div>
+                        </div> -->
                     </div>
-                </div> -->
+                </div>
             </div>
         </div>
     </section>
@@ -331,6 +331,50 @@
                         <button type="button" class="guest-btn minus-btn">-</button>
                         <input type="number" id="guests" value="1" min="1" max="10">
                         <button type="button" class="guest-btn plus-btn">+</button>
+                    </div>
+                </div>
+
+
+                <!-- Алкогольные предпочтения -->
+                <div class="form-group drinks-prefs">
+                    <label class="drinks-label">
+                        <i class="fas fa-wine-glass-alt"></i>
+                        <span>Предпочтения к алкоголю</span>
+                    </label>
+                    <p class="drinks-hint">Выберите то, что предпочитаете (можно несколько вариантов)</p>
+                    <div class="drinks-options">
+                        <label class="drink-option">
+                            <input type="checkbox" name="drinks" value="red_wine">
+                            <span class="drink-icon"></span>
+                            <span class="drink-name">Красное вино</span>
+                        </label>
+                        <label class="drink-option">
+                            <input type="checkbox" name="drinks" value="white_wine">
+                            <span class="drink-icon"></span>
+                            <span class="drink-name">Белое вино</span>
+                        </label>
+                        <label class="drink-option">
+                            <input type="checkbox" name="drinks" value="vodka">
+                            <span class="drink-icon"></span>
+                            <span class="drink-name">Водка</span>
+                        </label>
+                        <label class="drink-option">
+                            <input type="checkbox" name="drinks" value="whiskey">
+                            <span class="drink-icon"></span>
+                            <span class="drink-name">Виски</span>
+                        </label>
+                        <label class="drink-option">
+                            <input type="checkbox" name="drinks" value="non_alcoholic">
+                            <span class="drink-icon"></span>
+                            <span class="drink-name">Безалкогольные напитки</span>
+                        </label>
+                    </div>
+                    <div class="drinks-other">
+                        <label for="drinks_other">
+                            <i class="fas fa-pen"></i>
+                            <span>Другое (напишите)</span>
+                        </label>
+                        <input type="text" id="drinks_other" placeholder="Например: коньяк, шампанское, сок..." class="drinks-other-input">
                     </div>
                 </div>
                 

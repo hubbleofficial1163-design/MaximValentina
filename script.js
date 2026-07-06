@@ -1,434 +1,491 @@
 // ==============================================
-// СВАДЕБНЫЙ САЙТ - ФРОНТЕНД
-// Мария & Алексей | 15.09.2024
+// СВАДЕБНЫЙ САЙТ - МАКСИМ & ВАЛЕНТИНА
+// Интеграция с Google Sheets
 // ==============================================
 
-// Конфигурация
-const CONFIG = {
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw3mQQ9vOq-hQY__dD84Kemg4VBCmgtQOrby87ZRVX2S7Du7OzEMUccZ5moxJC7wHipGQ/exec', // ЗАМЕНИТЕ НА ВАШ URL
-    TELEGRAM_CHAT_URL: 'https://t.me/+hOTwCMbLMwI3ZDYy', // ЗАМЕНИТЕ НА ВАШУ ССЫЛКУ НА ЧАТ
-    WEDDING_DATE: '2026-08-08T11:45:00'  // Дата свадьбы
-};
-
-// Прелоадер
-document.addEventListener('DOMContentLoaded', function() {
-    const loader = document.querySelector('.loader');
-    setTimeout(() => {
-        loader.style.opacity = '0';
-        loader.style.visibility = 'hidden';
-    }, 800);
+(function() {
+    // ========== КОНФИГУРАЦИЯ ==========
+    // ⚠️ ЗАМЕНИТЕ ЭТОТ URL НА ВАШ URL ИЗ APPS SCRIPT ⚠️
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrqb_0Cn2JIXOSGOQKtDCQfmQnhxtpo6s0jS17nW26aGyLZ8veUnxjVuqjvJcnNYTp/exec';
     
-    // Инициализация
-    initTelegramLink();
-});
-
-// Таймер обратного отсчета
-function updateCountdown() {
-    const weddingDate = new Date(CONFIG.WEDDING_DATE).getTime();
-    const now = new Date().getTime();
-    const distance = weddingDate - now;
-
-    if (distance < 0) {
-        document.getElementById('days').innerText = '00';
-        document.getElementById('hours').innerText = '00';
-        document.getElementById('minutes').innerText = '00';
-        document.getElementById('seconds').innerText = '00';
-        return;
-    }
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-    document.getElementById('days').innerText = days.toString().padStart(2, '0');
-    document.getElementById('hours').innerText = hours.toString().padStart(2, '0');
-    document.getElementById('minutes').innerText = minutes.toString().padStart(2, '0');
-    document.getElementById('seconds').innerText = seconds.toString().padStart(2, '0');
-}
-
-// Запускаем таймер
-updateCountdown();
-setInterval(updateCountdown, 1000);
-
-// Управление количеством гостей
-const guestsInput = document.getElementById('guests');
-const minusBtn = document.querySelector('.minus-btn');
-const plusBtn = document.querySelector('.plus-btn');
-
-if (minusBtn && plusBtn) {
-    minusBtn.addEventListener('click', function() {
-        let currentValue = parseInt(guestsInput.value);
-        if (currentValue > 1) {
-            guestsInput.value = currentValue - 1;
-            if (navigator.vibrate) navigator.vibrate(30);
+    let isSubmitting = false;
+    
+    // ========== БАЗОВЫЕ СТИЛИ АНИМАЦИЙ ==========
+    const coreStyles = document.createElement('style');
+    coreStyles.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-    });
-    
-    plusBtn.addEventListener('click', function() {
-        let currentValue = parseInt(guestsInput.value);
-        if (currentValue < 10) {
-            guestsInput.value = currentValue + 1;
-            if (navigator.vibrate) navigator.vibrate(30);
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-    });
-    
-    guestsInput.addEventListener('change', function() {
-        let value = parseInt(this.value);
-        if (value < 1) this.value = 1;
-        if (value > 10) this.value = 10;
-    });
-}
-
-// Настройка ссылки на Telegram чат
-function initTelegramLink() {
-    const chatLink = document.querySelector('.chat-link');
-    if (chatLink && CONFIG.TELEGRAM_CHAT_URL) {
-        chatLink.href = CONFIG.TELEGRAM_CHAT_URL;
-        chatLink.target = '_blank';
-        chatLink.rel = 'noopener noreferrer';
-    }
-}
-
-// Обработка формы RSVP
-const rsvpForm = document.getElementById('rsvp-form');
-if (rsvpForm) {
-    rsvpForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Валидация
-        const attendanceSelected = document.querySelector('input[name="attendance"]:checked');
-        if (!attendanceSelected) {
-            showError('Пожалуйста, выберите, сможете ли вы прийти');
-            return;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        
-        const name = document.getElementById('name').value.trim();
-        const contact = document.getElementById('contact').value.trim();
-        
-        if (!name) {
-            showError('Пожалуйста, введите ваше имя');
-            document.getElementById('name').focus();
-            return;
+        @keyframes spinMusic {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        
-        if (!contact) {
-            showError('Пожалуйста, введите email или телефон для связи');
-            document.getElementById('contact').focus();
-            return;
-        }
-        
-        // Подготовка данных
-        const formData = {
-            name: name,
-            contact: contact,
-            attendance: attendanceSelected.value,
-            guests: document.getElementById('guests').value,
-            message: document.getElementById('message').value.trim() || ''
-        };
-        
-        // Отправка
-        await submitRSVP(formData);
-    });
-}
+    `;
+    document.head.appendChild(coreStyles);
+    
+    // ========== УНИВЕРСАЛЬНОЕ МОДАЛЬНОЕ ОКНО ==========
+    function showModal(title, message, isError = false) {
+        const existingModal = document.getElementById('customModal');
+        if (existingModal) existingModal.remove();
 
-// Функция отправки данных
-async function submitRSVP(formData) {
-    const submitBtn = document.querySelector('.submit-btn');
-    const originalContent = submitBtn.innerHTML;
-    
-    // Показываем индикатор загрузки
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Отправка...</span>';
-    submitBtn.disabled = true;
-    
-    try {
-        // Создаем FormData для отправки
-        const data = new URLSearchParams();
-        data.append('name', formData.name);
-        data.append('contact', formData.contact);
-        data.append('attendance', formData.attendance);
-        data.append('guests', formData.guests);
-        data.append('message', formData.message);
-        
-        // Отправляем запрос
-        const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-            method: 'POST',
-            body: data,
-            mode: 'no-cors'
-        });
-        
-        // Успешная отправка
-        showSuccess(formData.name);
-        
-    } catch (error) {
-        console.error('Ошибка отправки:', error);
-        showSuccess(formData.name); // Показываем успех даже при ошибке (fallback)
-    } finally {
-        // Восстанавливаем кнопку
-        submitBtn.innerHTML = originalContent;
-        submitBtn.disabled = false;
-    }
-}
-
-// Показать сообщение об успехе
-function showSuccess(guestName) {
-    const form = document.getElementById('rsvp-form');
-    const successMessage = document.getElementById('success-message');
-    
-    // Персонализируем сообщение
-    const successTitle = successMessage.querySelector('h3');
-    const successText = successMessage.querySelector('p');
-    
-    successTitle.textContent = `Спасибо, ${guestName}!`;
-    successText.textContent = 'Ваш ответ успешно отправлен! Мы будем с нетерпением ждать встречи на нашей свадьбе.';
-    
-    // Показываем/скрываем
-    form.style.display = 'none';
-    successMessage.style.display = 'block';
-    
-    // Прокручиваем к сообщению
-    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    // Скрываем клавиатуру
-    document.activeElement.blur();
-    
-    // Вибрация
-    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-}
-
-// Показать ошибку
-function showError(message) {
-    // Создаем элемент ошибки
-    let errorDiv = document.querySelector('.form-error');
-    
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.className = 'form-error';
-        errorDiv.style.cssText = `
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
-            color: #c53030;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 0.95rem;
+        const modal = document.createElement('div');
+        modal.id = 'customModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            z-index: 10000;
             animation: fadeIn 0.3s ease;
         `;
-        
-        const formHeader = document.querySelector('.form-header');
-        if (formHeader) {
-            formHeader.parentNode.insertBefore(errorDiv, formHeader.nextSibling);
-        } else {
-            rsvpForm.insertBefore(errorDiv, rsvpForm.firstChild);
-        }
-    }
-    
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    
-    // Автоудаление через 5 секунд
-    setTimeout(() => {
-        if (errorDiv && errorDiv.parentNode) {
-            errorDiv.style.opacity = '0';
-            errorDiv.style.transform = 'translateY(-10px)';
+
+        const icon = isError ? '✕' : '✓';
+        const iconColor = isError ? '#c62828' : '#2e7d32';
+        const bgIconColor = isError ? '#ffebee' : '#e8f5e9';
+        const borderColor = isError ? '#c62828' : '#2e7d32';
+
+        modal.innerHTML = `
+            <div style="
+                background: #ffffff;
+                border-radius: 16px;
+                padding: 32px 40px;
+                max-width: 380px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 20px 35px rgba(0, 0, 0, 0.15);
+                animation: slideUp 0.3s ease;
+                border-top: 3px solid ${borderColor};
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            ">
+                <div style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: ${bgIconColor};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 20px auto;
+                ">
+                    <div style="
+                        font-size: 32px;
+                        font-weight: 400;
+                        color: ${iconColor};
+                        line-height: 1;
+                    ">${icon}</div>
+                </div>
+                <h3 style="
+                    font-size: 24px;
+                    font-weight: 500;
+                    color: #1a1a1a;
+                    margin-bottom: 12px;
+                    letter-spacing: -0.3px;
+                ">${title}</h3>
+                <p style="
+                    font-size: 16px;
+                    color: #555555;
+                    margin-bottom: 28px;
+                    line-height: 1.5;
+                ">${message}</p>
+                <button onclick="this.closest('#customModal').remove()" style="
+                    background: #f5f5f5;
+                    color: #333333;
+                    border: none;
+                    padding: 12px 32px;
+                    border-radius: 40px;
+                    font-family: inherit;
+                    font-size: 15px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">
+                    Закрыть
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        if (!isError) {
             setTimeout(() => {
-                if (errorDiv.parentNode) {
-                    errorDiv.parentNode.removeChild(errorDiv);
-                }
-            }, 300);
+                if (modal.parentElement) modal.remove();
+            }, 4000);
         }
-    }, 5000);
-    
-    // Вибрация
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-}
-
-// Кнопка "Заполнить ещё один ответ"
-const newResponseBtn = document.getElementById('new-response');
-if (newResponseBtn) {
-    newResponseBtn.addEventListener('click', function() {
-        const form = document.getElementById('rsvp-form');
-        const successMessage = document.getElementById('success-message');
-        
-        // Сбрасываем форму
-        form.reset();
-        guestsInput.value = 1;
-        
-        // Удаляем сообщения об ошибках
-        const errors = document.querySelectorAll('.form-error');
-        errors.forEach(error => error.remove());
-        
-        // Показываем форму
-        successMessage.style.display = 'none';
-        form.style.display = 'block';
-        
-        // Прокручиваем к форме
-        form.scrollIntoView({ behavior: 'smooth' });
-        
-        // Фокус на первое поле
-        document.getElementById('name').focus();
-    });
-}
-
-// Плавная прокрутка
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href === '#') return;
-        
-        e.preventDefault();
-        const targetElement = document.querySelector(href);
-        if (targetElement) {
-            window.scrollTo({
-                top: targetElement.offsetTop - 80,
-                behavior: 'smooth'
-            });
-        }
-    });
-});
-
-// Анимация появления элементов
-function animateOnScroll() {
-    const elements = document.querySelectorAll('.timeline-item');
-    const windowHeight = window.innerHeight;
-    
-    elements.forEach(element => {
-        const elementTop = element.getBoundingClientRect().top;
-        
-        if (elementTop < windowHeight - 100) {
-            element.style.opacity = '1';
-            element.style.transform = 'translateY(0)';
-        }
-    });
-}
-
-window.addEventListener('scroll', animateOnScroll);
-window.addEventListener('load', animateOnScroll);
-
-// Предотвращение двойного тапа для масштабирования
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(event) {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
     }
-    lastTouchEnd = now;
-}, false);
+    
+    // ========== МОДАЛЬНОЕ ОКНО ЗАГРУЗКИ ==========
+    function showLoadingModal() {
+        const existingLoading = document.getElementById('loadingModal');
+        if (existingLoading) existingLoading.remove();
+        
+        const loadingModal = document.createElement('div');
+        loadingModal.id = 'loadingModal';
+        loadingModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        `;
+        loadingModal.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 16px;
+                padding: 32px 40px;
+                text-align: center;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            ">
+                <div style="
+                    width: 50px;
+                    height: 50px;
+                    border: 3px solid #e0e0e0;
+                    border-top-color: #b89474;
+                    border-radius: 50%;
+                    margin: 0 auto 20px;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <p style="
+                    font-size: 15px;
+                    color: #5a4c3e;
+                    margin: 0;
+                    font-weight: 500;
+                ">Отправка ответа...</p>
+            </div>
+        `;
+        document.body.appendChild(loadingModal);
+        return loadingModal;
+    }
+    
+    // ========== ОТПРАВКА В GOOGLE SHEETS ==========
+    async function sendToGoogleSheets(formData) {
+        const formBody = new URLSearchParams();
+        for (const drink of formData.drinks) {
+            formBody.append('drinks', drink);
+        }
+        if (formData.drinksOther) {
+            formBody.append('drinks_other', formData.drinksOther);
+        }
+        if (formData.message) {
+            formBody.append('message', formData.message);
+        }
+        
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formBody.toString()
+        });
+        
+        const result = await response.json();
+        return result;
+    }
+    
+    // ========== ТАЙМЕР ==========
+    function updateCountdown() {
+        const weddingDate = new Date('2026-08-08T11:45:00').getTime();
+        const now = new Date().getTime();
+        const distance = weddingDate - now;
 
-// Улучшение UX для iOS
-if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    document.addEventListener('focus', function(e) {
-        if (e.target.matches('input, textarea, select')) {
+        if (distance < 0) {
+            document.getElementById('days').innerText = '00';
+            document.getElementById('hours').innerText = '00';
+            document.getElementById('minutes').innerText = '00';
+            document.getElementById('seconds').innerText = '00';
+            return;
+        }
+
+        document.getElementById('days').innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+        document.getElementById('hours').innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+        document.getElementById('minutes').innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        document.getElementById('seconds').innerText = Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0');
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+    
+    // ========== ПРЕЛОАДЕР ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        const loader = document.querySelector('.loader');
+        if (loader) {
             setTimeout(() => {
-                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+            }, 800);
         }
-    }, true);
-}
-
-// Анимация иконок
-document.querySelectorAll('.icon-circle').forEach(icon => {
-    icon.addEventListener('touchstart', function() {
-        this.style.transform = 'scale(0.95)';
     });
     
-    icon.addEventListener('touchend', function() {
-        this.style.transform = 'scale(1.05)';
-        setTimeout(() => {
-            this.style.transform = 'scale(1)';
-        }, 150);
-    });
-});
-
-// Добавляем CSS для анимаций
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .fa-spinner {
-        animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
-
-
-// ==============================================
-// УПРАВЛЕНИЕ МУЗЫКОЙ
-// ==============================================
-
-// Создаем аудио объект
-const audio = new Audio('1.mp3');
-audio.loop = true;
-audio.preload = 'auto';
-
-let isPlaying = false;
-const musicBtn = document.getElementById('music-toggle');
-
-// Функция для переключения музыки
-function toggleMusic() {
-    if (isPlaying) {
-        audio.pause();
-        musicBtn.classList.remove('playing');
-        musicBtn.querySelector('i').className = 'fas fa-music';
-        musicBtn.querySelector('.music-text').textContent = 'Включить музыку';
-        isPlaying = false;
-    } else {
-        // Пытаемся воспроизвести
-        const playPromise = audio.play();
+    // ========== МУЗЫКА ==========
+    function initMusic() {
+        const musicBtn = document.getElementById('music-toggle');
+        if (!musicBtn) return;
         
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                musicBtn.classList.add('playing');
+        const audio = new Audio('1.mp3');
+        audio.loop = true;
+        audio.preload = 'auto';
+        
+        let isPlaying = false;
+        
+        function toggleMusic() {
+            if (isPlaying) {
+                audio.pause();
+                musicBtn.classList.remove('playing');
                 musicBtn.querySelector('i').className = 'fas fa-music';
                 musicBtn.querySelector('.music-text').textContent = 'Включить музыку';
-                isPlaying = true;
-            }).catch(() => {
-                // Автовоспроизведение заблокировано - показываем подсказку
-                musicBtn.querySelector('.music-text').textContent = 'Нажмите для воспроизведения';
-                setTimeout(() => {
-                    if (!isPlaying) {
-                        musicBtn.querySelector('.music-text').textContent = 'Включить музыку';
-                    }
-                }, 2000);
-            });
+                isPlaying = false;
+            } else {
+                audio.play().then(() => {
+                    musicBtn.classList.add('playing');
+                    musicBtn.querySelector('i').className = 'fas fa-music';
+                    musicBtn.querySelector('.music-text').textContent = 'Выключить музыку';
+                    isPlaying = true;
+                }).catch(() => {
+                    musicBtn.querySelector('.music-text').textContent = 'Нажмите для воспроизведения';
+                    setTimeout(() => {
+                        if (!isPlaying) {
+                            musicBtn.querySelector('.music-text').textContent = 'Включить музыку';
+                        }
+                    }, 2000);
+                });
+            }
         }
+        
+        musicBtn.addEventListener('click', toggleMusic);
+        musicBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            toggleMusic();
+        });
+        
+        audio.addEventListener('error', function(e) {
+            console.warn('Ошибка загрузки музыки:', e);
+            musicBtn.querySelector('i').className = 'fas fa-volume-mute';
+            musicBtn.querySelector('.music-text').textContent = 'Музыка недоступна';
+            musicBtn.style.opacity = '0.6';
+            musicBtn.style.pointerEvents = 'none';
+        });
+        
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isPlaying) {
+                audio.pause();
+            } else if (!document.hidden && isPlaying) {
+                audio.play().catch(() => {});
+            }
+        });
     }
-}
 
-// Обработчик клика по кнопке
-if (musicBtn) {
-    musicBtn.addEventListener('click', toggleMusic);
-    musicBtn.addEventListener('touchend', function(e) {
-        // Предотвращаем двойное срабатывание
-        e.preventDefault();
-        toggleMusic();
+    document.addEventListener('DOMContentLoaded', function() {
+        initMusic();
     });
-}
-
-// Обработка ошибок аудио
-audio.addEventListener('error', function(e) {
-    console.warn('Ошибка загрузки музыки:', e);
-    musicBtn.querySelector('i').className = 'fas fa-volume-mute';
-    musicBtn.querySelector('.music-text').textContent = 'Музыка недоступна';
-    musicBtn.style.opacity = '0.6';
-    musicBtn.style.pointerEvents = 'none';
-});
-
-// Пауза при выходе из вкладки (экономия ресурсов)
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden && isPlaying) {
-        audio.pause();
-    } else if (!document.hidden && isPlaying) {
-        audio.play().catch(() => {});
+    
+    // ========== ИНИЦИАЛИЗАЦИЯ ФОРМЫ ==========
+    function initRSVPForm() {
+        const form = document.getElementById('rsvp-form');
+        if (!form) {
+            console.error('❌ Форма с id="rsvp-form" не найдена!');
+            return;
+        }
+        
+        console.log('✅ Форма найдена, инициализация...');
+        
+        const messageInput = document.getElementById('message');
+        const drinkCheckboxes = document.querySelectorAll('input[name="drinks"]');
+        const drinksOtherInput = document.getElementById('drinks_other');
+        const submitBtn = form.querySelector('.submit-btn');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (isSubmitting) return;
+            
+            const message = messageInput ? messageInput.value.trim() : '';
+            
+            let drinkValues = [];
+            drinkCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    drinkValues.push(checkbox.value);
+                }
+            });
+            
+            const drinksOther = drinksOtherInput ? drinksOtherInput.value.trim() : '';
+            
+            // Блокируем кнопку
+            isSubmitting = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Отправка...</span>';
+            }
+            
+            const loadingModal = showLoadingModal();
+            
+            try {
+                const formData = { 
+                    drinks: drinkValues,
+                    drinksOther: drinksOther,
+                    message: message
+                };
+                
+                const result = await sendToGoogleSheets(formData);
+                
+                loadingModal.remove();
+                
+                if (result.result === 'success') {
+                    // Показываем успех через встроенный блок
+                    const successMessage = document.getElementById('success-message');
+                    const formDiv = document.getElementById('rsvp-form');
+                    
+                    if (successMessage && formDiv) {
+                        formDiv.style.display = 'none';
+                        successMessage.style.display = 'block';
+                        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        showModal('Ответ отправлен!', 'Спасибо! Ваш ответ получен.', false);
+                    }
+                    
+                    // Очищаем форму
+                    if (messageInput) messageInput.value = '';
+                    drinkCheckboxes.forEach(checkbox => checkbox.checked = false);
+                    if (drinksOtherInput) drinksOtherInput.value = '';
+                    
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                } else {
+                    throw new Error(result.message || 'Ошибка отправки');
+                }
+            } catch (error) {
+                loadingModal.remove();
+                showModal('Ошибка', error.message || 'Произошла ошибка при отправке. Пожалуйста, попробуйте ещё раз.', true);
+            } finally {
+                isSubmitting = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Отправить ответ</span><i class="fas fa-paper-plane"></i>';
+                }
+            }
+        });
     }
-});
+    
+    // ========== НОВЫЙ ОТВЕТ ==========
+    const newResponseBtn = document.getElementById('new-response');
+    if (newResponseBtn) {
+        newResponseBtn.addEventListener('click', function() {
+            const form = document.getElementById('rsvp-form');
+            const successMessage = document.getElementById('success-message');
+            const messageInput = document.getElementById('message');
+            const drinkCheckboxes = document.querySelectorAll('input[name="drinks"]');
+            const drinksOtherInput = document.getElementById('drinks_other');
+            
+            drinkCheckboxes.forEach(checkbox => checkbox.checked = false);
+            if (drinksOtherInput) drinksOtherInput.value = '';
+            if (messageInput) messageInput.value = '';
+            
+            if (successMessage) successMessage.style.display = 'none';
+            if (form) form.style.display = 'block';
+            
+            if (form) form.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+    
+    // ========== ПЛАВНАЯ ПРОКРУТКА ==========
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href === '#') return;
+            
+            e.preventDefault();
+            const targetElement = document.querySelector(href);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // ========== АНИМАЦИЯ ==========
+    function animateOnScroll() {
+        const elements = document.querySelectorAll('.timeline-item');
+        const windowHeight = window.innerHeight;
+        
+        elements.forEach(element => {
+            const elementTop = element.getBoundingClientRect().top;
+            if (elementTop < windowHeight - 100) {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }
+        });
+    }
+
+    window.addEventListener('scroll', animateOnScroll);
+    window.addEventListener('load', animateOnScroll);
+    
+    // ========== ПРЕДОТВРАЩЕНИЕ ДВОЙНОГО ТАПА ==========
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+    
+    // ========== УЛУЧШЕНИЕ UX ДЛЯ IOS ==========
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        document.addEventListener('focus', function(e) {
+            if (e.target.matches('input, textarea, select')) {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        }, true);
+    }
+    
+    // ========== АНИМАЦИЯ ИКОНОК ==========
+    document.querySelectorAll('.icon-circle').forEach(icon => {
+        icon.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+        });
+        
+        icon.addEventListener('touchend', function() {
+            this.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+    
+    // ========== ЗАПУСК ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        initRSVPForm();
+        console.log('✅ Форма RSVP готова к отправке в Google Sheets');
+        console.log('📊 URL скрипта:', SCRIPT_URL);
+    });
+    
+})();

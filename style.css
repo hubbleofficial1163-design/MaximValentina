@@ -95,7 +95,7 @@ h1, h2, h3 {
 .hero {
     height: 100vh;
     min-height: -webkit-fill-available;
-    background: url('1.jpg') center/cover no-repeat;
+    background: url('88.jpg') left center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1035,7 +1035,7 @@ footer p {
     height: 100%;
     background: 
         linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        url('1.jpg');
+        url('88.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -1616,7 +1616,7 @@ footer p {
 .hero {
     height: 100vh;
     min-height: -webkit-fill-available;
-    background: url('1.jpg') center/cover no-repeat;
+    background: url('88.jpg') center/cover no-repeat;
     display: flex;
     flex-direction: column;
     justify-content: space-between;

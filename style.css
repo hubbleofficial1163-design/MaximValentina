@@ -95,11 +95,10 @@ h1, h2, h3 {
 .hero {
     height: 100vh;
     min-height: -webkit-fill-available;
-    background: url('88.jpg') center/cover no-repeat;
+    background: url('88.jpg') left center/cover no-repeat;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     text-align: center;
     color: white;
     position: relative;
@@ -1540,13 +1539,7 @@ footer p {
 }
 
 /* Кнопка музыки */
-/* Кнопка музыки прижата к верху */
 .music-btn {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -1561,11 +1554,13 @@ footer p {
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-top: 15px;
     -webkit-touch-callout: none;
     user-select: none;
     touch-action: manipulation;
+    position: relative;
+    z-index: 3;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    flex-shrink: 0;
 }
 
 .music-btn:active {
@@ -1624,12 +1619,12 @@ footer p {
     background: url('88.jpg') center/cover no-repeat;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     text-align: center;
     color: white;
     position: relative;
-    padding: 20px 15px;
+    padding: 20px 15px 30px;
 }
 
 .hero-blur {
@@ -1655,13 +1650,7 @@ footer p {
 }
 
 /* Кнопка музыки прижата к верху и по центру */
-/* Кнопка музыки прижата к верху */
 .music-btn {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -1679,7 +1668,11 @@ footer p {
     -webkit-touch-callout: none;
     user-select: none;
     touch-action: manipulation;
+    position: relative;
+    z-index: 3;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    align-self: center; /* меняем с flex-start на center */
+    margin-top: 5px;
     flex-shrink: 0;
 }
 
@@ -1718,8 +1711,8 @@ footer p {
     width: 100%;
     max-width: 500px;
     padding: 20px;
+    margin-bottom: 30px;
     flex-shrink: 0;
-    margin-top: -220px; /* поднимает контент выше */
 }
 
 .names {
@@ -2085,3 +2078,12 @@ footer p {
 }
 
 
+.names {
+    font-size: 2.8rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    line-height: 1.1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    transform: translateY(-290px); /* ← поднимает на 30px вверх */
+}

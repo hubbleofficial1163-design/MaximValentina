@@ -2085,5 +2085,5 @@ footer p {
     margin-bottom: 10px;
     line-height: 1.1;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    transform: translateY(-290px); /* ← поднимает на 30px вверх */
+    transform: translateY(-260px); /* ← поднимает на 30px вверх */
 }

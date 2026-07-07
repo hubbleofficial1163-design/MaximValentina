@@ -6,7 +6,7 @@
 (function() {
     // ========== КОНФИГУРАЦИЯ ==========
     // ⚠️ ЗАМЕНИТЕ ЭТОТ URL НА ВАШ URL ИЗ APPS SCRIPT ⚠️
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrqb_0Cn2JIXOSGOQKtDCQfmQnhxtpo6s0jS17nW26aGyLZ8veUnxjVuqjvJcnNYTp/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3Dw1wquum3HpKZAUqKOHIndLI3e9-xVpba5_5FNJaPzju67NTZtP0G-4ofqTftYs/exec';
     
     let isSubmitting = false;
     
